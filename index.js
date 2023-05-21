@@ -1,53 +1,30 @@
-import dotenv from 'dotenv';
 import express from 'express';
+import bodyParser from 'body-parser';
 import mongoose from 'mongoose';
+import cors from 'cors';
+import dotenv from 'dotenv';
 
-import Book from './models/books.js';
+import postRoutes from './routes/posts.js';
+import userRoutes from './routes/users.js';
 
 const app = express();
-const PORT = process.env.PORT || 5000;
 dotenv.config();
 
-mongoose.set('strictQuery', false);
 
-const connectDB = async () => {
-    try {
-        const conn = await mongoose.connect(process.env.CONNECTION_URL);
-        console.log(`MongoDB Connected: ${conn.connection.host}`);
-    } catch (error) {
-        console.log(error);
-        process.exit(1);
-    }
-}
+app.use(bodyParser.json({ limit: "30mb", extended: true }));
+app.use(bodyParser.urlencoded({ limit: "30mb", extended: true }));
+app.use(cors({
+    credentials: true,
+    origin: "https://tame-red-woodpecker.cyclic.app",
+}));
 
-app.get('/', (res, req) => {
-    res.json({ title: 'hihi'});
-})
-app.post('/add-note', async (req, res) => {
-    try {
-        await Book.insertMany([
-            {
-                title: 'Hello Cyclic',
-                content: "I'm trying Cyclic",
-            }
-        ]);
-        res.send('Data added');
-    } catch (error) {
-        console.log(error);
-    }
-})
+app.use('/posts', postRoutes);
+app.use('/users', userRoutes);
 
-app.get('/books', async (req, res) => {
-    const books = await Book.find();
-    if (books) {
-        res.json(books);
-    } else {
-        res.send("Something went wrong");
-    }
-})
+const PORT = process.env.PORT || 5000;
 
-connectDB().then(() => {
-    app.listen(PORT, () => {
-        console.log(`Listening on ${PORT}`);
-    })
-})
+mongoose.connect(process.env.CONNECTION_URL, { useNewUrlParser: true, useUnifiedTopology: true })
+    .then(() => app.listen(PORT, () => console.log(`Server running on port: ${PORT}`)))
+    .catch((error) => console.log(error.message));
+
+// https://www.mongodb.com/cloud/atlas
